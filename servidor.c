@@ -79,7 +79,7 @@ char *iniSensorSala(sala_t *disps, int id, int temp, int humidade, int estadoVen
     {
         if ((s->id == id))
         {
-            s->temperatura = temperatura;
+            s->temperatura = temp;
             s->humidade = humidade;
             s->estadoVent1 = estadoVent1;
             s->estadoVent2 = estadoVent2;
@@ -104,7 +104,7 @@ char *desSensorSala(sala_t *disps, int id)
     {
         if ((s->id == id))
         {
-            if (c->humidade = -1)
+            if (s->humidade == -1)
             {
                 return "ERROR 06";
             }
@@ -133,11 +133,11 @@ char *altSensorSala(sala_t *disps, int id, int temp, int humidade, int estadoVen
     {
         if ((s->id == id))
         {
-            if (s->humidade = -1)
+            if (s->humidade == -1)
             {
                 return "ERROR 06";
             }            
-            s->temperatura = temperatura;
+            s->temperatura = temp;
             s->humidade = humidade;
             s->estadoVent1 = estadoVent1;
             s->estadoVent2 = estadoVent2;
@@ -164,7 +164,7 @@ char *infoSala(sala_t *disps, int id)
     {
         if ((s->id == id))
         {
-            if (s->humidade = -1)
+            if (s->humidade == -1)
             {
                 return "ERROR 06";
             }
@@ -179,17 +179,20 @@ char *infoSala(sala_t *disps, int id)
 char *infoTodasSalas(sala_t *disps)
 {
     char *sala = malloc(500 * sizeof(char));
+    char *result = malloc(500 * sizeof(char));
     sprintf(sala, "salas: ");
     
     sala_t *s = disps;
     while (s)
     {
-        //sala 0: 31 87 11 22 30 40
-        sprintf(sala, "%s %d: %d %d 1%d 2%d 3%d 4%d", sala, s->id, s->temperatura, s->humidade, s->estadoVent1, s->estadoVent2, s->estadoVent3, s->estadoVent4);
-        return sala;
+        sprintf(result, "%s %d: %d %d 1%d 2%d 3%d 4%d", sala, s->id, s->temperatura, s->humidade, s->estadoVent1, s->estadoVent2, s->estadoVent3, s->estadoVent4);
+        strcpy(sala, result);
         s = s->prox;
     }
+    free(result);
+    return sala;
 }
+
 
 void usage(int argc, char **argv)
 {

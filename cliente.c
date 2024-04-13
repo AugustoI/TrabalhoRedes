@@ -2,11 +2,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-
 #include <sys/types.h>
 #include <sys/socket.h>
-
 #include "common.h"
+
+#define BUFSZ 500
+
+int typeRequest = 0;
 
 void usage(int argc, char **argv)
 {
@@ -15,42 +17,77 @@ void usage(int argc, char **argv)
     exit(EXIT_FAILURE);
 }
 
-#define BUFSZ 500
+char *prepareCommand(char **request) {
+    char *command = malloc(BUFSZ * sizeof(char));
+    if (command == NULL) {
+        return "ERROR: Memory allocation failed";
+    }
 
-char *prepareCommand(char **command)
+    if (strcmp(request[0], "register") == 0) {
+        snprintf(command, BUFSZ, "CAD_REQ %s", request[1]);
+        typeRequest = 1;
+    } else if (strcmp(request[0], "load") == 0) {
+        snprintf(command, BUFSZ, "SAL_REQ %s", request[1]);
+    } else {
+        free(command);
+        return "ERROR: Invalid command";
+    }
+
+    return command;
+}
+
+char *checkResponse(char *response)
 {
-    printf("prepare 1\n");
-    if (strcmp(command[0], "install") == 0)
+    if (strcmp(response, "OK 01") == 0)
     {
-        char *aux = malloc(BUFSZ * sizeof(char));
-        sprintf(aux, "INS_REQ %s %s %s %s", command[3], command[1], command[4], command[5]);
-        return aux;
+        return "sala instanciada com sucesso";
     }
-    if (strcmp(command[0], "remove") == 0)
+
+    if (strcmp(response, "OK 02") == 0)
     {
-        char *aux = malloc(BUFSZ * sizeof(char));
-        sprintf(aux, "REM_REQ %s %s", command[3], command[1]);
-        return aux;
+        return "sensores inicializados com sucesso";
     }
-    if (strcmp(command[0], "change") == 0)
+
+    if (strcmp(response, "OK 03") == 0)
     {
-        char *aux = malloc(BUFSZ * sizeof(char));
-        sprintf(aux, "CH_REQ %s %s %s %s", command[3], command[1], command[4], command[5]);
-        return aux;
+        return "sensores desligados com sucesso";
     }
-    if ((strcmp(command[0], "show") == 0) && (strcmp(command[2], "in") == 0))
+
+    if (strcmp(response, "OK 04") == 0)
     {
-        char *aux = malloc(BUFSZ * sizeof(char));
-        sprintf(aux, "LOC_REQ %s", command[3]);
-        return aux;
+        return "informações atualizadas com sucesso";
     }
-    if ((strcmp(command[0], "show") == 0))
+
+    if (strcmp(response, "ERROR 01") == 0)
     {
-        char *aux = malloc(BUFSZ * sizeof(char));
-        sprintf(aux, "DEV_REQ %s %s", command[3], command[1]);
-        return aux;
+        return "sala inválida";
     }
-    return "ERROR";
+
+    if (strcmp(response, "ERROR 02") == 0)
+    {
+        return "sala já existe";
+    }
+
+    if (strcmp(response, "ERROR 03") == 0)
+    {
+        return "sala inexistente";
+    }
+
+    if (strcmp(response, "ERROR 04") == 0)
+    {
+        return "sensores inválidos";
+    }
+
+    if (strcmp(response, "ERROR 05") == 0)
+    {
+        return "sensores já instalados";
+    }
+
+    if (strcmp(response, "ERROR 06") == 0)
+    {
+        return "sensores não instalados";
+    }
+    return response;
 }
 
 int main(int argc, char **argv)
@@ -82,16 +119,12 @@ int main(int argc, char **argv)
     char addrstr[BUFSZ];
     addrtostr(addr, addrstr, BUFSZ);
 
-    printf("connected to %s\n", addrstr);
-
     char buf[BUFSZ];
     memset(buf, 0, BUFSZ);
-    printf("mensagem> ");
     fgets(buf, BUFSZ - 1, stdin);
     char resp[600];
     sprintf(resp, "%s", prepareCommand(split(buf, " ")));
     size_t count = send(s, resp, strlen(resp) + 1, 0);
-    printf("Resposta: %s", resp);
     if (count != strlen(resp) + 1)
     {
         logexit("send");
@@ -109,8 +142,7 @@ int main(int argc, char **argv)
         total += count;
     }
 
-    printf("received %u bytes\n", total);
-    puts(buf);
+    puts(checkResponse(buf));
 
     close(s);
     exit(EXIT_SUCCESS);
