@@ -34,37 +34,52 @@ char *cadastrarSala(sala_t *salas, int id)
 
     sala_t *s = salas;
 
-    while (s)
+    if (s->id == -1)
     {
-        if ((s->id == id))
-        {
-            return "ERROR 02";
-        }
-
-        s = s->prox;
-    }
-
-    sala_t *c = malloc(sizeof(sala_t));
-    c->id = id;
-    c->temperatura = -1;
-    c->humidade = -1;
-    c->estadoVent1 = -1;
-    c->estadoVent2 = -1;
-    c->estadoVent3 = -1;
-    c->estadoVent4 = -1;
-    c->prox = NULL;
-
-    sala_t *p = salas;
-    if (!p)
-    {
-        salas = c;
+        s->id = id;
+        s->temperatura = -1;
+        s->humidade = -1;
+        s->estadoVent1 = -1;
+        s->estadoVent2 = -1;
+        s->estadoVent3 = -1;
+        s->estadoVent4 = -1;
+        s->prox = NULL;
         return "OK 01";
     }
+    else
+    {
+        while (s)
+        {
+            if ((s->id == id))
+            {
+                return "ERROR 02";
+            }
 
-    while (p->prox)
-        p = p->prox;
-    p->prox = c;
-    return "OK 01";
+            s = s->prox;
+        }
+        sala_t *c = malloc(sizeof(sala_t));
+        c->id = id;
+        c->temperatura = -1;
+        c->humidade = -1;
+        c->estadoVent1 = -1;
+        c->estadoVent2 = -1;
+        c->estadoVent3 = -1;
+        c->estadoVent4 = -1;
+        c->prox = NULL;
+
+        sala_t *p = salas;
+        printf("id %d\n", p->id);
+        if (!p)
+        {
+            salas = c;
+            return "OK 01";
+        }
+
+        while (p->prox)
+            p = p->prox;
+        p->prox = c;
+        return "OK 01";
+    }
 }
 
 char *iniSensorSala(sala_t *disps, int id, int temp, int humidade, int estadoVent1, int estadoVent2, int estadoVent3, int estadoVent4)
@@ -168,7 +183,7 @@ char *infoSala(sala_t *disps, int id)
             {
                 return "ERROR 06";
             }
-            sprintf(sala, "sala %d: %d %d 1%d 2%d 3%d 4%d", s->id, s->temperatura, s->humidade, s->estadoVent1, s->estadoVent2, s->estadoVent3, s->estadoVent4);
+            sprintf(sala, "sala %d: %d %d %d %d %d %d", s->id, s->temperatura, s->humidade, s->estadoVent1, s->estadoVent2, s->estadoVent3, s->estadoVent4);
             return sala;
         }
         s = s->prox;
@@ -185,7 +200,11 @@ char *infoTodasSalas(sala_t *disps)
     sala_t *s = disps;
     while (s)
     {
-        sprintf(result, "%s %d: %d %d 1%d 2%d 3%d 4%d", sala, s->id, s->temperatura, s->humidade, s->estadoVent1, s->estadoVent2, s->estadoVent3, s->estadoVent4);
+        if (s->id == -1)
+        {
+            return "ERROR 03";
+        }
+        sprintf(result, "%s %d: %d %d %d %d %d %d", sala, s->id, s->temperatura, s->humidade, s->estadoVent1, s->estadoVent2, s->estadoVent3, s->estadoVent4);
         strcpy(sala, result);
         s = s->prox;
     }
@@ -203,6 +222,7 @@ void usage(int argc, char **argv)
 
 char *executeCommand(sala_t *salas, char **values)
 {
+    printf("laod %s\n", values[0]);
     if (strcmp(values[0], "CAD_REQ") == 0)
     {
         return cadastrarSala(salas, atoi(values[1]));
@@ -225,6 +245,7 @@ char *executeCommand(sala_t *salas, char **values)
     }
     if (strcmp(values[0], "INF_REQ") == 0)
     {
+        printf("load\n");
         return infoTodasSalas(salas);
     }
     return "ERROR";
@@ -271,8 +292,9 @@ int main(int argc, char **argv)
     addrtostr(addr, addrstr, BUFSZ);
     printf("bound to %s, waiting connections\n", addrstr);
 
-    sala_t dispositivos;
-    dispositivos.prox = NULL;
+    sala_t salas;
+    salas.id = -1;
+    salas.prox = NULL;
 
     while (1)
     {
@@ -295,7 +317,7 @@ int main(int argc, char **argv)
         size_t count = recv(cSock, buf, BUFSZ, 0);
         printf("[msg] %s, %d bytes %s\n", caddrstr, (int)count, buf);
         char resp[600];
-        sprintf(resp, "%s", executeCommand(&dispositivos, split(buf, " ")));
+        sprintf(resp, "%s", executeCommand(&salas, split(buf, " ")));
         printf("%s\n", resp);
         printf("Executed\n");
         count = send(cSock, resp, strlen(resp) + 1, 0);

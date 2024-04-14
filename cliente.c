@@ -22,15 +22,24 @@ char *prepareCommand(char **request) {
     if (command == NULL) {
         return "ERROR: Memory allocation failed";
     }
-
+    
     if (strcmp(request[0], "register") == 0) {
         snprintf(command, BUFSZ, "CAD_REQ %s", request[1]);
         typeRequest = 1;
-    } else if (strcmp(request[0], "load") == 0) {
-        snprintf(command, BUFSZ, "SAL_REQ %s", request[1]);
+    } else if ((strcmp(request[0], "init") == 0) && (strcmp(request[1], "info") == 0)) {
+        snprintf(command, BUFSZ, "INI_REQ %s %s %s %s %s %s %s", request[2], request[3], request[4], request[5], request[6], request[7], request[8]);
+    } else if (strcmp(request[0], "shutdown") == 0) {
+        snprintf(command, BUFSZ, "DES_REQ %s", request[1]);
+    } else if ((strcmp(request[0], "update") == 0) && (strcmp(request[1], "info") == 0)) {
+        snprintf(command, BUFSZ, "ALT_REQ %s %s %s %s %s %s %s", request[2], request[3], request[4], request[5], request[6], request[7], request[8]);
+    } else if ((strcmp(request[0], "load") == 0) && (strcmp(request[1], "info") == 0)) {
+        snprintf(command, BUFSZ, "SAL_REQ %s", request[2]);
+    } else if ((strcmp(request[0], "load") == 0) && (strcmp(request[1], "rooms\n") == 0)) {
+        snprintf(command, BUFSZ, "INF_REQ");
     } else {
         free(command);
-        return "ERROR: Invalid command";
+        printf("Comando invalido\n");
+        return "ERROR";
     }
 
     return command;
@@ -124,6 +133,7 @@ int main(int argc, char **argv)
     fgets(buf, BUFSZ - 1, stdin);
     char resp[600];
     sprintf(resp, "%s", prepareCommand(split(buf, " ")));
+      
     size_t count = send(s, resp, strlen(resp) + 1, 0);
     if (count != strlen(resp) + 1)
     {
@@ -142,7 +152,10 @@ int main(int argc, char **argv)
         total += count;
     }
 
-    puts(checkResponse(buf));
+    if (strcmp(resp,"ERROR") != 0)
+    {
+        puts(checkResponse(buf));
+    }
 
     close(s);
     exit(EXIT_SUCCESS);
