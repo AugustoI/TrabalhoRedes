@@ -7,6 +7,7 @@
 #include "common.h"
 
 #define BUFSZ 500
+#define MAX_LEN 10
 
 int typeRequest = 0;
 
@@ -15,6 +16,34 @@ void usage(int argc, char **argv)
     printf("usage: %s <server IP> <server port>", argv[0]);
     printf("example: %s 127.0.0.1 51511", argv[0]);
     exit(EXIT_FAILURE);
+}
+
+char *load_file(int isInsert, char *file) {
+    FILE *arquivo;
+    char linha[MAX_LEN];
+    arquivo = fopen(file, "r");
+    if (arquivo == NULL) {
+        return "Erro ao abrir o arquivo";
+    }
+    
+    char *command = malloc(BUFSZ * sizeof(char));
+    if (isInsert == 1)
+    {
+        snprintf(command, BUFSZ, "INI_REQ");
+    }
+    else
+    {
+        snprintf(command, BUFSZ, "ALT_REQ");
+    }
+
+    while (fgets(linha, MAX_LEN, arquivo) != NULL) {
+        linha[strcspn(linha, "\n")] = '\0';
+        strcat(command, " ");
+        strcat(command, linha);
+    }
+    fclose(arquivo);
+
+    return command;
 }
 
 char *prepareCommand(char **request) {
@@ -28,13 +57,17 @@ char *prepareCommand(char **request) {
         typeRequest = 1;
     } else if ((strcmp(request[0], "init") == 0) && (strcmp(request[1], "info") == 0)) {
         snprintf(command, BUFSZ, "INI_REQ %s %s %s %s %s %s %s", request[2], request[3], request[4], request[5], request[6], request[7], request[8]);
+    } else if ((strcmp(request[0], "init") == 0) && (strcmp(request[1], "file") == 0)) {
+        snprintf(command, BUFSZ, load_file(1,request[2]));
     } else if (strcmp(request[0], "shutdown") == 0) {
         snprintf(command, BUFSZ, "DES_REQ %s", request[1]);
     } else if ((strcmp(request[0], "update") == 0) && (strcmp(request[1], "info") == 0)) {
         snprintf(command, BUFSZ, "ALT_REQ %s %s %s %s %s %s %s", request[2], request[3], request[4], request[5], request[6], request[7], request[8]);
+    } else if ((strcmp(request[0], "update") == 0) && (strcmp(request[1], "file") == 0)) {
+        snprintf(command, BUFSZ, load_file(0,request[2]));
     } else if ((strcmp(request[0], "load") == 0) && (strcmp(request[1], "info") == 0)) {
         snprintf(command, BUFSZ, "SAL_REQ %s", request[2]);
-    } else if ((strcmp(request[0], "load") == 0) && (strcmp(request[1], "rooms\n") == 0)) {
+    } else if ((strcmp(request[0], "load") == 0) && (strcmp(request[1], "rooms") == 0)) {
         snprintf(command, BUFSZ, "INF_REQ");
     } else if (strcmp(request[0], "kill") == 0) {
         snprintf(command, BUFSZ, "kill");
@@ -140,8 +173,12 @@ int main(int argc, char **argv)
             buf[len - 1] = '\0';
         }
         sprintf(resp, "%s", prepareCommand(split(buf, " ")));
-        printf("resp %s\n",resp);
         size_t count = send(s, resp, strlen(resp) + 1, 0);
+        if (strcmp(resp, "kill") == 0)
+        {
+            close(s);
+            break;
+        }
         if (count != strlen(resp) + 1)
         {
             logexit("send");
