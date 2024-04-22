@@ -9,8 +9,6 @@
 #define BUFSZ 500
 #define MAX_LEN 10
 
-int typeRequest = 0;
-
 void usage(int argc, char **argv)
 {
     printf("usage: %s <server IP> <server port>", argv[0]);
@@ -52,26 +50,25 @@ char *prepareCommand(char **request) {
         return "ERROR: Memory allocation failed";
     }
     
-    if (strcmp(request[0], "register") == 0) {
+    if ((strcmp(request[0], "register") == 0) && (request[2] == NULL)) {
         snprintf(command, BUFSZ, "CAD_REQ %s", request[1]);
-        typeRequest = 1;
-    } else if ((strcmp(request[0], "init") == 0) && (strcmp(request[1], "info") == 0)) {
+    } else if ((strcmp(request[0], "init") == 0) && (strcmp(request[1], "info") == 0) && (request[9] == NULL)) {
         snprintf(command, BUFSZ, "INI_REQ %s %s %s %s %s %s %s", request[2], request[3], request[4], request[5], request[6], request[7], request[8]);
-    } else if ((strcmp(request[0], "init") == 0) && (strcmp(request[1], "file") == 0)) {
+    } else if ((strcmp(request[0], "init") == 0) && (strcmp(request[1], "file") == 0) && (request[3] == NULL)) {
         snprintf(command, BUFSZ, load_file(1,request[2]));
-    } else if (strcmp(request[0], "shutdown") == 0) {
+    } else if ((strcmp(request[0], "shutdown") == 0) && (request[2] == NULL)) {
         snprintf(command, BUFSZ, "DES_REQ %s", request[1]);
-    } else if ((strcmp(request[0], "update") == 0) && (strcmp(request[1], "info") == 0)) {
+    } else if ((strcmp(request[0], "update") == 0) && (strcmp(request[1], "info") == 0) && (request[9] == NULL)) {
         snprintf(command, BUFSZ, "ALT_REQ %s %s %s %s %s %s %s", request[2], request[3], request[4], request[5], request[6], request[7], request[8]);
-    } else if ((strcmp(request[0], "update") == 0) && (strcmp(request[1], "file") == 0)) {
+    } else if ((strcmp(request[0], "update") == 0) && (strcmp(request[1], "file") == 0) && (request[3] == NULL)) {
         snprintf(command, BUFSZ, load_file(0,request[2]));
-    } else if ((strcmp(request[0], "load") == 0) && (strcmp(request[1], "info") == 0)) {
+    } else if ((strcmp(request[0], "load") == 0) && (strcmp(request[1], "info") == 0) && (request[3] == NULL)) {
         snprintf(command, BUFSZ, "SAL_REQ %s", request[2]);
-    } else if ((strcmp(request[0], "load") == 0) && (strcmp(request[1], "rooms") == 0)) {
+    } else if ((strcmp(request[0], "load") == 0) && (strcmp(request[1], "rooms") == 0) && (request[2] == NULL)) {
         snprintf(command, BUFSZ, "INF_REQ");
-    } else if (strcmp(request[0], "kill") == 0) {
+    } else if ((strcmp(request[0], "kill") == 0) && (request[1] == NULL)) {
         snprintf(command, BUFSZ, "kill");
-    }  else {
+    } else {
         free(command);
         printf("Comando invalido\n");
         return "ERROR";
