@@ -315,6 +315,12 @@ int main(int argc, char **argv)
         char buf[BUFSZ];
         memset(buf, 0, BUFSZ);
         size_t count = recv(cSock, buf, BUFSZ, 0);
+        
+        if (strcmp("kill",buf) == 0)
+        {
+            break;
+        }
+        
         printf("[msg] %s, %d bytes %s\n", caddrstr, (int)count, buf);
         char resp[600];
         sprintf(resp, "%s", executeCommand(&salas, split(buf, " ")));

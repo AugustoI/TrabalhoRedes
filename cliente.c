@@ -36,7 +36,9 @@ char *prepareCommand(char **request) {
         snprintf(command, BUFSZ, "SAL_REQ %s", request[2]);
     } else if ((strcmp(request[0], "load") == 0) && (strcmp(request[1], "rooms\n") == 0)) {
         snprintf(command, BUFSZ, "INF_REQ");
-    } else {
+    } else if (strcmp(request[0], "kill") == 0) {
+        snprintf(command, BUFSZ, "kill");
+    }  else {
         free(command);
         printf("Comando invalido\n");
         return "ERROR";
@@ -111,53 +113,62 @@ int main(int argc, char **argv)
     {
         usage(argc, argv);
     }
-
-    int s;
-    s = socket(AF_INET, SOCK_STREAM, 0);
-    if (s == -1)
-    {
-        logexit("socket");
-    }
-
-    struct sockaddr *addr = (struct sockaddr *)(&storage);
-    if (0 != connect(s, addr, sizeof(storage)))
-    {
-        logexit("connect");
-    }
-
-    char addrstr[BUFSZ];
-    addrtostr(addr, addrstr, BUFSZ);
-
-    char buf[BUFSZ];
-    memset(buf, 0, BUFSZ);
-    fgets(buf, BUFSZ - 1, stdin);
-    char resp[600];
-    sprintf(resp, "%s", prepareCommand(split(buf, " ")));
-      
-    size_t count = send(s, resp, strlen(resp) + 1, 0);
-    if (count != strlen(resp) + 1)
-    {
-        logexit("send");
-    }
-
-    memset(buf, 0, BUFSZ);
-    unsigned total = 0;
+     
     while (1)
     {
-        count = recv(s, buf + total, BUFSZ - total, 0);
-        if (count == 0)
+        int s;
+        s = socket(AF_INET, SOCK_STREAM, 0);
+        if (s == -1)
+        {
+            logexit("socket");
+        }
+
+        struct sockaddr *addr = (struct sockaddr *)(&storage);
+        if (0 != connect(s, addr, sizeof(storage)))
+        {
+            logexit("connect");
+        }
+
+        char addrstr[BUFSZ];
+        addrtostr(addr, addrstr, BUFSZ);
+        char buf[BUFSZ];
+        memset(buf, 0, BUFSZ);
+        fgets(buf, BUFSZ - 1, stdin);
+        char resp[600];
+        int len = strlen(buf);
+        if (len > 0) {
+            buf[len - 1] = '\0';
+        }
+        sprintf(resp, "%s", prepareCommand(split(buf, " ")));
+        printf("resp %s\n",resp);
+        size_t count = send(s, resp, strlen(resp) + 1, 0);
+        if (count != strlen(resp) + 1)
+        {
+            logexit("send");
+        }
+
+        memset(buf, 0, BUFSZ);
+        unsigned total = 0;
+        while (1)
+        {
+            count = recv(s, buf + total, BUFSZ - total, 0);
+            if (count == 0)
+            {
+                break;
+            }
+            total += count;
+        }
+
+        if (strcmp(resp,"ERROR") != 0)
+        {
+            puts(checkResponse(buf));
+        }
+        else
         {
             break;
         }
-        total += count;
+        close(s);
     }
-
-    if (strcmp(resp,"ERROR") != 0)
-    {
-        puts(checkResponse(buf));
-    }
-
-    close(s);
     exit(EXIT_SUCCESS);
     return 0;
 }
